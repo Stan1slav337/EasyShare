@@ -1,0 +1,19 @@
+<!-- file_detail.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>File Details</title>
+</head>
+<body>
+    {% if files %}
+        <h1>Files</h1>
+        {% for file in files %}
+            <p>{{ file.file_name }} - <a href="/download/{{ file.file_link }}/{{ file.file_name }}">Download</a></p>
+        {% endfor %}
+        <a href="/download_all/{{ files[0].file_link }}">Download All</a>
+    {% else %}
+        <p>Files not found.</p>
+    {% endif %}
+</body>
+</html>

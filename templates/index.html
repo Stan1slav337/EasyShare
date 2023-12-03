@@ -78,7 +78,7 @@
    <div class="tagline">Your easy and fast solution for file sharing</div>
    <div class="upload-btn-wrapper">
      <!-- <button class="btn" onclick="document.getElementById('fileInput').click()">Upload Files</button> -->
-     <input type="file" name="file" id="fileInput" style="display: none;" onchange="handleFileUpload()" />
+     <input type="file" name="file" id="fileInput" style="display: none;" onchange="handleFileUpload()" multiple />
      <!-- Visible button that triggers file input -->
      <button class="btn" onclick="triggerFileInput()">Upload Files</button>
  
@@ -113,29 +113,34 @@
  
    <script>
      function handleFileUpload() {
-       var fileInput = document.getElementById('fileInput');
-       if(fileInput.files.length === 0) {
-         alert('No file selected!');
-         return;
-       }
- 
-       var formData = new FormData();
-       formData.append('file', fileInput.files[0]);
- 
-       // Perform the fetch inside this function
-       fetch('/upload', {
-         method: 'POST',
-         body: formData
-       })
-       .then(response => response.json())
-       .then(data => {
-         console.log(data);
-         document.getElementById('upload-status').innerText = data.message;
-       })
-       .catch(error => {
-         console.error('Error:', error);
-         document.getElementById('upload-status').innerText = 'Upload Failed.';
-       });
+      var fileInput = document.getElementById('fileInput');
+      if (fileInput.files.length === 0) {
+          alert('No file selected!');
+          return;
+      }
+
+      var formData = new FormData();
+
+      // Append each file to the formData object
+      for (let i = 0; i < fileInput.files.length; i++) {
+          formData.append('files', fileInput.files[i]);
+      }
+
+      // Perform the fetch inside this function
+      fetch('/upload', {
+          method: 'POST',
+          body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+          console.log(data);
+          document.getElementById('upload-status').innerText = data.message;
+      })
+      .catch(error => {
+          console.error('Error:', error);
+          document.getElementById('upload-status').innerText = 'Upload Failed.';
+      });
+
      }
 	 
 	 function triggerFileInput() {
