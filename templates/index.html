@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+ <html lang="en">
+ <head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>EasyShare - File Sharing Service</title>
+ <style>
+   body {
+     font-family: 'Arial', sans-serif;
+     margin: 0;
+     padding: 0;
+     text-align: center;
+     background-color: #f7f7f7;
+   }
+   .header {
+     background-color: #e9f5ff;
+     padding: 20px;
+   }
+   .logo {
+     font-size: 40px;
+     color: #333;
+   }
+   .tagline {
+     font-size: 20px;
+     color: #666;
+   }
+   .upload-btn-wrapper {
+     margin: 20px;
+     display: inline-block;
+   }
+   .btn {
+     border: 2px solid #000;
+     color: #000;
+     background-color: white;
+     padding: 10px 20px;
+     border-radius: 5px;
+     font-size: 20px;
+     font-weight: bold;
+   }
+   .info-section {
+     display: flex;
+     justify-content: center;
+     padding: 20px;
+   }
+   .info-block {
+     margin: 0 10px;
+   }
+   .info-icon {
+     font-size: 30px;
+     margin-bottom: 10px;
+   }
+   .info-text {
+     color: #666;
+     font-size: 16px;
+   }
+   .btn:hover {
+     background-color: #bcbcbc; /* Slightly Darker Grey for hover */
+   }
+   .progress-bar-container {
+     display: none;
+     width: 50%;
+     background-color: #e0e0e0;
+     border-radius: 5px;
+     margin: 20px auto;
+   }
+   .progress-bar {
+     height: 20px;
+     background-color: #5eb5e0;
+     width: 0%;
+     border-radius: 5px;
+   }
+ </style>
+ </head>
+ <body>
+ 
+ <div class="header">
+   <div class="logo">EasyShare</div>
+   <div class="tagline">Your easy and fast solution for file sharing</div>
+   <div class="upload-btn-wrapper">
+     <!-- <button class="btn" onclick="document.getElementById('fileInput').click()">Upload Files</button> -->
+     <input type="file" name="file" id="fileInput" style="display: none;" onchange="handleFileUpload()" />
+     <!-- Visible button that triggers file input -->
+     <button class="btn" onclick="triggerFileInput()">Upload Files</button>
+ 
+     <div id="upload-status"></div>
+     <input type="file" id="fileInput" style="display:none;" />
+   </div>
+ </div>
+ 
+ <div class="info-section">
+   <div class="info-block">
+     <div class="info-icon">&#128202;</div>
+     <div class="info-text">Store your content and access it every time you need.</div>
+   </div>
+   <div class="info-block">
+     <div class="info-icon">&#10148;</div>
+     <div class="info-text">Distribute your content directly from our website to your friends, colleagues, or share it with the internet.</div>
+   </div>
+   <div class="info-block">
+     <div class="info-icon">&#128274;</div>
+     <div class="info-text">No registration required. You can use EasyShare immediately, without using an account. Optional sign-in is available for better content management.</div>
+   </div>
+   <div class="info-block">
+     <div class="info-icon">&#60;&#47;&#62;</div>
+     <div class="info-text">Benefit from our API that can be customized to your specific file management and data handling needs.</div>
+   </div>
+ </div>
+   <div class="progress-bar-container" id="progressBarContainer">
+     <div class="progress-bar" id="progressBar"></div>
+   </div>
+ 
+ 
+ 
+   <script>
+     function handleFileUpload() {
+       var fileInput = document.getElementById('fileInput');
+       if(fileInput.files.length === 0) {
+         alert('No file selected!');
+         return;
+       }
+ 
+       var formData = new FormData();
+       formData.append('file', fileInput.files[0]);
+ 
+       // Perform the fetch inside this function
+       fetch('/upload', {
+         method: 'POST',
+         body: formData
+       })
+       .then(response => response.json())
+       .then(data => {
+         console.log(data);
+         document.getElementById('upload-status').innerText = data.message;
+       })
+       .catch(error => {
+         console.error('Error:', error);
+         document.getElementById('upload-status').innerText = 'Upload Failed.';
+       });
+     }
+	 
+	 function triggerFileInput() {
+       // Reset the file input before triggering click to ensure onchange event fires even if the same file is selected
+       document.getElementById('fileInput').value = '';
+       document.getElementById('fileInput').click();
+     }
+   </script>
+
+</body>
+</html>
