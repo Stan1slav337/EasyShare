@@ -10,10 +10,9 @@
      margin: 0;
      padding: 0;
      text-align: center;
-     background-color: #f7f7f7;
    }
    .header {
-     background-color: #e9f5ff;
+     background-color: #FFFFFF;
      padding: 20px;
    }
    .logo {
@@ -28,88 +27,127 @@
      margin: 20px;
      display: inline-block;
    }
-   .btn {
-     border: 2px solid #000;
-     color: #000;
-     background-color: white;
-     padding: 10px 20px;
-     border-radius: 5px;
-     font-size: 20px;
-     font-weight: bold;
-   }
-   .info-section {
-     display: flex;
-     justify-content: center;
-     padding: 20px;
-   }
-   .info-block {
-     margin: 0 10px;
-   }
-   .info-icon {
-     font-size: 30px;
-     margin-bottom: 10px;
-   }
-   .info-text {
-     color: #666;
-     font-size: 16px;
-   }
-   .btn:hover {
-     background-color: #bcbcbc; /* Slightly Darker Grey for hover */
-   }
-   .progress-bar-container {
-     display: none;
-     width: 50%;
-     background-color: #e0e0e0;
-     border-radius: 5px;
-     margin: 20px auto;
-   }
-   .progress-bar {
-     height: 20px;
-     background-color: #5eb5e0;
-     width: 0%;
-     border-radius: 5px;
-   }
+.btn {
+	background-color: #f7f7f7;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 20px 50px;
+    border-radius: 5px;
+    font-size: 35px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.btn:hover {
+    background-color: #D5D5D5; /* Darker grey on hover */
+}
+.info-section {
+    display: flex;
+    flex-direction: column;
+    gap: 20px; /* Adjust the gap value between rows */
+    padding: 20px; /* Add padding to the sides */
+}
+
+.info-row {
+	display: flex;
+	justify-content: space-between;
+	gap: 20px; /* Adjust the gap value between elements in a row */
+}
+
+.info-block {
+    flex-basis: calc(50% - 10px); /* Adjust to maintain consistent sizing and spacing */
+    padding: 20px;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    text-align: center;
+    background-color: #f7f7f7;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.info-block:hover {
+    transform: translateY(-5px);
+}
+
+.info-icon {
+    font-size: 40px;
+    margin-bottom: 10px;
+    color: #007bff;
+}
+
+.info-title {
+    font-size: 24px;
+    color: #333;
+    margin: 10px 0;
+}
+
+.info-text {
+    font-size: 16px;
+    color: #666;
+    margin-top: auto; /* Push text to the bottom */
+}
+
+@media (max-width: 768px) {
+	.info-row {
+		flex-direction: column;
+		margin-bottom: 23px;
+	}
+
+    .info-section {
+        display: block; /* Display elements in a single column on mobile */
+    }
+
+    .info-block {
+        flex-basis: 100%; /* Make each block full width on mobile */
+        margin-bottom: 20px; /* Add margin to separate blocks */
+    }
+}
+
+
  </style>
  </head>
  <body>
  
  <div class="header">
-   <div class="logo">EasyShare</div>
+   <img src="/static/logo.png" alt="Logo" width="540" height="120">
    <div class="tagline">Your easy and fast solution for file sharing</div>
    <div class="upload-btn-wrapper">
-     <!-- <button class="btn" onclick="document.getElementById('fileInput').click()">Upload Files</button> -->
      <input type="file" name="file" id="fileInput" style="display: none;" onchange="handleFileUpload()" multiple />
-     <!-- Visible button that triggers file input -->
      <button class="btn" onclick="triggerFileInput()">Upload Files</button>
- 
      <div id="upload-status"></div>
      <input type="file" id="fileInput" style="display:none;" />
    </div>
  </div>
  
- <div class="info-section">
-   <div class="info-block">
-     <div class="info-icon">&#128202;</div>
-     <div class="info-text">Store your content and access it every time you need.</div>
-   </div>
-   <div class="info-block">
-     <div class="info-icon">&#10148;</div>
-     <div class="info-text">Distribute your content directly from our website to your friends, colleagues, or share it with the internet.</div>
-   </div>
-   <div class="info-block">
-     <div class="info-icon">&#128274;</div>
-     <div class="info-text">No registration required. You can use EasyShare immediately, without using an account. Optional sign-in is available for better content management.</div>
-   </div>
-   <div class="info-block">
-     <div class="info-icon">&#60;&#47;&#62;</div>
-     <div class="info-text">Benefit from our API that can be customized to your specific file management and data handling needs.</div>
-   </div>
- </div>
-   <div class="progress-bar-container" id="progressBarContainer">
-     <div class="progress-bar" id="progressBar"></div>
-   </div>
- 
- 
+<div class="info-section">
+    <div class="info-row">
+        <div class="info-block">
+            <div class="info-icon">&#128202;</div>
+            <h2 class="info-title">Store Content</h2>
+            <div class="info-text">Access your content whenever you need it.</div>
+        </div>
+        <div class="info-block">
+            <div class="info-icon">&#10148;</div>
+            <h2 class="info-title">Distribute Content</h2>
+            <div class="info-text">Share content with friends, colleagues, or the internet.</div>
+        </div>
+    </div>
+    <div class="info-row">
+        <div class="info-block">
+            <div class="info-icon">&#128274;</div>
+            <h2 class="info-title">No Registration</h2>
+            <div class="info-text">Use EasyShare without the need for registration. Optional sign-in available for better management.</div>
+        </div>
+        <div class="info-block">
+            <div class="info-icon">&#60;&#47;&#62;</div>
+            <h2 class="info-title">Customizable API</h2>
+            <div class="info-text">Benefit from our API for tailored file management and data handling.</div>
+        </div>
+    </div>
+</div>
  
    <script>
      function handleFileUpload() {
@@ -121,12 +159,10 @@
 
       var formData = new FormData();
 
-      // Append each file to the formData object
       for (let i = 0; i < fileInput.files.length; i++) {
           formData.append('files', fileInput.files[i]);
       }
 
-      // Perform the fetch inside this function
       fetch('/upload', {
           method: 'POST',
           body: formData
@@ -135,6 +171,11 @@
       .then(data => {
           console.log(data);
           document.getElementById('upload-status').innerText = data.message;
+		  var anchorElement = document.createElement('a');
+		  anchorElement.href = '/d/' + data.link
+		  anchorElement.classList.add('tagline')
+		  anchorElement.innerText = 'Download link'
+		  document.getElementById('upload-status').appendChild(anchorElement);
       })
       .catch(error => {
           console.error('Error:', error);
@@ -144,7 +185,6 @@
      }
 	 
 	 function triggerFileInput() {
-       // Reset the file input before triggering click to ensure onchange event fires even if the same file is selected
        document.getElementById('fileInput').value = '';
        document.getElementById('fileInput').click();
      }
