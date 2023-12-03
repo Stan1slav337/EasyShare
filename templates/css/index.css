@@ -1,0 +1,110 @@
+ body {
+     font-family: 'Arial', sans-serif;
+     margin: 0;
+     padding: 0;
+     text-align: center;
+}
+ .header {
+     background-color: #FFFFFF;
+     padding: 20px;
+}
+ .logo {
+     font-size: 40px;
+     color: #333;
+}
+ .tagline {
+     font-size: 20px;
+     color: #666;
+}
+ .upload-btn-wrapper {
+     margin: 20px;
+     display: inline-block;
+}
+ .btn {
+     background-color: #f7f7f7;
+     border: 2px solid #e0e0e0;
+     border-radius: 10px;
+     padding: 20px 50px;
+     border-radius: 5px;
+     font-size: 35px;
+     font-weight: bold;
+     cursor: pointer;
+}
+ .btn:hover {
+     background-color: #D5D5D5;
+    /* Darker grey on hover */
+}
+ .info-section {
+     display: flex;
+     flex-direction: column;
+     gap: 20px;
+    /* Adjust the gap value between rows */
+     padding: 20px;
+    /* Add padding to the sides */
+}
+ .info-row {
+     display: flex;
+     justify-content: space-between;
+     gap: 20px;
+    /* Adjust the gap value between elements in a row */
+}
+ .info-block {
+     flex-basis: calc(50% - 10px);
+    /* Adjust to maintain consistent sizing and spacing */
+     padding: 20px;
+     border: 1px solid #e0e0e0;
+     border-radius: 10px;
+     text-align: center;
+     background-color: #f7f7f7;
+     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+     transition: transform 0.2s;
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+}
+ .info-block:hover {
+     transform: translateY(-5px);
+}
+ .info-icon {
+     font-size: 40px;
+     margin-bottom: 10px;
+     color: #007bff;
+}
+ .info-title {
+     font-size: 24px;
+     color: #333;
+     margin: 10px 0;
+}
+ .info-text {
+     font-size: 16px;
+     color: #666;
+     margin-top: auto;
+    /* Push text to the bottom */
+}
+ @media (max-width: 768px) {
+     body {
+         margin: auto;
+         background-color: #000000;
+    }
+     img {
+         max-width: 100%;
+         height: auto;
+         display: block;
+         margin: auto;
+    }
+     .info-row {
+         flex-direction: column;
+         margin-bottom: 23px;
+    }
+     .info-section {
+         display: block;
+        /* Display elements in a single column on mobile */
+    }
+     .info-block {
+         flex-basis: 100%;
+        /* Make each block full width on mobile */
+         margin-bottom: 20px;
+        /* Add margin to separate blocks */
+    }
+}
+ 

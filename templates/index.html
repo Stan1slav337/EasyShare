@@ -1,194 +1,48 @@
 <!DOCTYPE html>
- <html lang="en">
- <head>
- <meta charset="UTF-8">
- <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>EasyShare - File Sharing Service</title>
- <style>
-   body {
-     font-family: 'Arial', sans-serif;
-     margin: 0;
-     padding: 0;
-     text-align: center;
-   }
-   .header {
-     background-color: #FFFFFF;
-     padding: 20px;
-   }
-   .logo {
-     font-size: 40px;
-     color: #333;
-   }
-   .tagline {
-     font-size: 20px;
-     color: #666;
-   }
-   .upload-btn-wrapper {
-     margin: 20px;
-     display: inline-block;
-   }
-.btn {
-	background-color: #f7f7f7;
-    border: 2px solid #e0e0e0;
-    border-radius: 10px;
-    padding: 20px 50px;
-    border-radius: 5px;
-    font-size: 35px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.btn:hover {
-    background-color: #D5D5D5; /* Darker grey on hover */
-}
-.info-section {
-    display: flex;
-    flex-direction: column;
-    gap: 20px; /* Adjust the gap value between rows */
-    padding: 20px; /* Add padding to the sides */
-}
-
-.info-row {
-	display: flex;
-	justify-content: space-between;
-	gap: 20px; /* Adjust the gap value between elements in a row */
-}
-
-.info-block {
-    flex-basis: calc(50% - 10px); /* Adjust to maintain consistent sizing and spacing */
-    padding: 20px;
-    border: 1px solid #e0e0e0;
-    border-radius: 10px;
-    text-align: center;
-    background-color: #f7f7f7;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.info-block:hover {
-    transform: translateY(-5px);
-}
-
-.info-icon {
-    font-size: 40px;
-    margin-bottom: 10px;
-    color: #007bff;
-}
-
-.info-title {
-    font-size: 24px;
-    color: #333;
-    margin: 10px 0;
-}
-
-.info-text {
-    font-size: 16px;
-    color: #666;
-    margin-top: auto; /* Push text to the bottom */
-}
-
-@media (max-width: 768px) {
-	.info-row {
-		flex-direction: column;
-		margin-bottom: 23px;
-	}
-
-    .info-section {
-        display: block; /* Display elements in a single column on mobile */
-    }
-
-    .info-block {
-        flex-basis: 100%; /* Make each block full width on mobile */
-        margin-bottom: 20px; /* Add margin to separate blocks */
-    }
-}
-
-
- </style>
- </head>
- <body>
- 
- <div class="header">
-   <img src="/static/logo.png" alt="Logo" width="540" height="120">
-   <div class="tagline">Your easy and fast solution for file sharing</div>
-   <div class="upload-btn-wrapper">
-     <input type="file" name="file" id="fileInput" style="display: none;" onchange="handleFileUpload()" multiple />
-     <button class="btn" onclick="triggerFileInput()">Upload Files</button>
-     <div id="upload-status"></div>
-     <input type="file" id="fileInput" style="display:none;" />
-   </div>
- </div>
- 
-<div class="info-section">
-    <div class="info-row">
-        <div class="info-block">
-            <div class="info-icon">&#128202;</div>
-            <h2 class="info-title">Store Content</h2>
-            <div class="info-text">Access your content whenever you need it.</div>
-        </div>
-        <div class="info-block">
-            <div class="info-icon">&#10148;</div>
-            <h2 class="info-title">Distribute Content</h2>
-            <div class="info-text">Share content with friends, colleagues, or the internet.</div>
-        </div>
-    </div>
-    <div class="info-row">
-        <div class="info-block">
-            <div class="info-icon">&#128274;</div>
-            <h2 class="info-title">No Registration</h2>
-            <div class="info-text">Use EasyShare without the need for registration. Optional sign-in available for better management.</div>
-        </div>
-        <div class="info-block">
-            <div class="info-icon">&#60;&#47;&#62;</div>
-            <h2 class="info-title">Customizable API</h2>
-            <div class="info-text">Benefit from our API for tailored file management and data handling.</div>
-        </div>
-    </div>
-</div>
- 
-   <script>
-     function handleFileUpload() {
-      var fileInput = document.getElementById('fileInput');
-      if (fileInput.files.length === 0) {
-          alert('No file selected!');
-          return;
-      }
-
-      var formData = new FormData();
-
-      for (let i = 0; i < fileInput.files.length; i++) {
-          formData.append('files', fileInput.files[i]);
-      }
-
-      fetch('/upload', {
-          method: 'POST',
-          body: formData
-      })
-      .then(response => response.json())
-      .then(data => {
-          console.log(data);
-          document.getElementById('upload-status').innerText = data.message;
-		  var anchorElement = document.createElement('a');
-		  anchorElement.href = '/d/' + data.link
-		  anchorElement.classList.add('tagline')
-		  anchorElement.innerText = 'Download link'
-		  document.getElementById('upload-status').appendChild(anchorElement);
-      })
-      .catch(error => {
-          console.error('Error:', error);
-          document.getElementById('upload-status').innerText = 'Upload Failed.';
-      });
-
-     }
-	 
-	 function triggerFileInput() {
-       document.getElementById('fileInput').value = '';
-       document.getElementById('fileInput').click();
-     }
-   </script>
-
-</body>
+<html lang="en">
+   <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>EasyShare - File Sharing Service</title>
+      <link rel="stylesheet" href="/static/css/index.css">
+   </head>
+   <body>
+      <div class="header">
+         <img src="/static/img/logo.png" alt="Logo" width="540" height="120">
+         <div class="tagline">Your easy and fast solution for file sharing</div>
+         <div class="upload-btn-wrapper">
+            <input type="file" name="file" id="fileInput" style="display: none;" onchange="handleFileUpload()" multiple />
+            <button class="btn" onclick="triggerFileInput()">Upload Files</button>
+            <div id="upload-status"></div>
+            <input type="file" id="fileInput" style="display:none;" />
+         </div>
+      </div>
+      <div class="info-section">
+         <div class="info-row">
+            <div class="info-block">
+               <div class="info-icon">&#128202;</div>
+               <h2 class="info-title">Store Content</h2>
+               <div class="info-text">Access your content whenever you need it.</div>
+            </div>
+            <div class="info-block">
+               <div class="info-icon">&#10148;</div>
+               <h2 class="info-title">Distribute Content</h2>
+               <div class="info-text">Share content with friends, colleagues, or the internet.</div>
+            </div>
+         </div>
+         <div class="info-row">
+            <div class="info-block">
+               <div class="info-icon">&#128274;</div>
+               <h2 class="info-title">No Registration</h2>
+               <div class="info-text">Use EasyShare without the need for registration. Optional sign-in available for better management.</div>
+            </div>
+            <div class="info-block">
+               <div class="info-icon">&#60;&#47;&#62;</div>
+               <h2 class="info-title">Customizable API</h2>
+               <div class="info-text">Benefit from our API for tailored file management and data handling.</div>
+            </div>
+         </div>
+      </div>
+      <script src="static/js/upload.js"></script>
+   </body>
 </html>
