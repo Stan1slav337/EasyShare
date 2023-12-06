@@ -64,7 +64,7 @@ def display_file(link):
     if not files_data:
         return "Files not found", 404
 
-    return render_template("file_detail.html", files=files_data)
+    return render_template("file_detail.html", files=files_data, link=link)
 
 
 @app.route("/download/<link>/<filename>")
@@ -76,6 +76,9 @@ def download_file(link, filename):
         (link, filename),
     )
     file_data = cursor.fetchone()
+
+    cursor.execute(f"UPDATE {TABLE_NAME} SET download_count = download_count + 1 WHERE file_link = %s AND file_name = %s", (link, filename))
+    db.commit()
     cursor.close()
 
     if not file_data:
@@ -84,6 +87,7 @@ def download_file(link, filename):
     blob = storage_client.bucket(BUCKET_NAME).blob(f"{link}/{filename}")
     file = blob.download_as_bytes()
     in_memory_file = io.BytesIO(file)
+    
     return send_file(
         in_memory_file,
         as_attachment=True,
@@ -98,6 +102,8 @@ def download_all_files(link):
 
     cursor.execute(f"SELECT file_name FROM {TABLE_NAME} WHERE file_link = %s", (link,))
     files_data = cursor.fetchall()
+    cursor.execute(f"UPDATE {TABLE_NAME} SET download_count = download_count + 1 WHERE file_link = %s", (link,))
+    db.commit()
     cursor.close()
 
     if not files_data:
