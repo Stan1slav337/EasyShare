@@ -3,20 +3,61 @@ import mysql.connector
 import uuid
 import io
 import zipfile
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for, session
+from flask_oauthlib.client import OAuth
 from werkzeug.utils import secure_filename
 from google.cloud import storage
 from config import *
 
 app = Flask(__name__)
 app.static_folder = "templates"
+app.secret_key = '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'
 db = mysql.connector.connect(**DB_CONFIG)
 storage_client = storage.Client()
+
+oauth = OAuth(app)
+google = oauth.remote_app(
+    'google',
+    consumer_key=CONSUMER_KEY,
+    consumer_secret=CONSUMER_SECRET,
+    request_token_params={
+        'scope': 'https://www.googleapis.com/auth/userinfo.email'
+        # Removed 'response_type': 'code' from here
+    },
+    base_url='https://www.googleapis.com/oauth2/v1/',
+    request_token_url=None,
+    access_token_method='POST',
+    access_token_url='https://accounts.google.com/o/oauth2/token',
+    authorize_url='https://accounts.google.com/o/oauth2/auth',
+)
+
+@app.route('/login')
+def login():
+    return google.authorize(callback=url_for('authorized', _external=True))
 
 
 @app.route("/")
 def hello():
     return render_template("index.html")
+
+
+@app.route('/login/callback')
+def authorized():
+    response = google.authorized_response()
+    if response is None or response.get('access_token') is None:
+        return 'Access denied: reason={} error={}'.format(
+            request.args['error_reason'],
+            request.args['error_description']
+        )
+
+    session['google_token'] = (response['access_token'], '')
+    userinfo = google.get('userinfo')
+    return 'Logged in as id={}'.format(userinfo.data['id'])
+
+
+@google.tokengetter
+def get_google_oauth_token():
+    return session.get('google_token')
 
 
 @app.route("/upload", methods=["POST"])

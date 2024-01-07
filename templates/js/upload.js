@@ -34,3 +34,11 @@ function triggerFileInput() {
 	document.getElementById('fileInput').value = '';
 	document.getElementById('fileInput').click();
 }
+
+// This function could be triggered after a successful login
+function onLoginSuccess() {
+    // Redirect to a user dashboard or a specific page
+    window.location.href = '/user-dashboard'; 
+    // or you can display a success message
+    // alert('Successfully logged in with Google!');
+}
