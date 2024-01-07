@@ -49,6 +49,35 @@ def upload_file():
         201,
     )
 
+@app.route("/api/upload", methods=["POST"])
+def api_upload_file():
+    files = request.files.getlist("files")
+    existing_link = request.form.get('link', None)  # Get the link if provided
+
+    if not files:
+        return jsonify(message="No file part"), 400
+
+    filelink = existing_link if existing_link else str(uuid.uuid4())
+
+    for file in files:
+        filename = secure_filename(file.filename)
+
+        # Database operations
+        cursor = db.cursor()
+        cursor.execute(
+            f"INSERT INTO {TABLE_NAME} (file_name, file_link, user_id) VALUES (%s, %s, %s)",
+            (filename, filelink, -1),
+        )
+        db.commit()
+        cursor.close()
+
+        # File upload to Google Cloud Storage
+        blob = storage_client.bucket(BUCKET_NAME).blob(f"{filelink}/{filename}")
+        blob.upload_from_string(file.read(), content_type=file.content_type)
+
+    return jsonify(message="Files uploaded successfully", link=filelink), 201
+
+
 
 @app.route("/d/<link>")
 def display_file(link):
@@ -130,6 +159,39 @@ def download_all_files(link):
         download_name=f"{link}_files.zip",
         mimetype="application/zip",
     )
+
+@app.route("/api/download/<link>", methods=["GET"])
+def api_download_all_files(link):
+    cursor = db.cursor(dictionary=True)
+    cursor.execute(f"SELECT file_name FROM {TABLE_NAME} WHERE file_link = %s", (link,))
+    files_data = cursor.fetchall()
+    db.commit()
+    cursor.close()
+
+    if not files_data:
+        return jsonify(message="Files not found"), 404
+
+    zip_filename = f"tmp_{link}.zip"
+    with zipfile.ZipFile(zip_filename, "w") as zipf:
+        for file_data in files_data:
+            filename = file_data["file_name"]
+            blob = storage_client.bucket(BUCKET_NAME).blob(f"{link}/{filename}")
+            file_content = blob.download_as_bytes()
+            zipf.writestr(filename, file_content)
+
+    return_data = io.BytesIO()
+    with open(zip_filename, "rb") as f:
+        return_data.write(f.read())
+    os.remove(zip_filename)
+    return_data.seek(0)
+
+    return send_file(
+        return_data,
+        as_attachment=True,
+        download_name=f"{link}_files.zip",
+        mimetype="application/zip",
+    )
+
 
 
 if __name__ == "__main__":
