@@ -1,40 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
-   <head>
-      <meta charset="UTF-8">
-      <title>File Details</title>
-      <link rel="stylesheet" href="/static/css/file_detail.css">
-   </head>
-   <body>
-      <div class="container">
-         <h1>Files</h1>
-         {% if files %}
-         <div class="file-info">
+<head>
+    <meta charset="UTF-8">
+    <title>File Details</title>
+    <link rel="stylesheet" href="/static/css/file_detail.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Files</h1>
+        {% if files %}
+        <div class="file-info">
             <table>
-               <tr>
-                  <th>File Name</th>
-                  <th>Upload Time</th>
-                  <th>Download Count</th>
-                  <th>Actions</th>
-               </tr>
-               {% for file in files %}
-               <tr>
-                  <td>{{ file.file_name }}</td>
-                  <td>{{ file.upload_time }}</td>
-                  <td>{{ file.download_count }}</td>
-                  <td>
-                     <a href="/download/{{ file.file_link }}/{{ file.file_name }}" class="download-button">Download</a>
-                  </td>
-               </tr>
-               {% endfor %}
+                <tr>
+                    <th>File Name</th>
+                    <th>Upload Time</th>
+                    <th>Download Count</th>
+                    <th>File Size</th> <!-- Added column for File Size -->
+                    <th>Actions</th>
+                </tr>
+                {% for file in files %}
+                <tr>
+                    <td>{{ file.file_name }}</td>
+                    <td>{{ file.upload_time }}</td>
+                    <td>{{ file.download_count }}</td>
+                    <td>{{ file.file_size }}</td> <!-- Display File Size -->
+                    <td>
+                        <a href="/download/{{ file.file_link }}/{{ file.file_name }}" class="download-button">Download</a>
+                    </td>
+                </tr>
+                {% endfor %}
             </table>
-         </div>
-         <div class="download-buttons">
+        </div>
+        <div class="download-buttons">
             <a href="/download_all/{{ link }}" class="download-button">Download All</a>
-         </div>
-         {% else %}
-         <p>Files not found.</p>
-         {% endif %}
-      </div>
-   </body>
+        </div>
+        {% else %}
+        <p>Files not found.</p>
+        {% endif %}
+    </div>
+</body>
 </html>

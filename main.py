@@ -30,24 +30,29 @@ def upload_file():
 
     for file in files:
         filename = secure_filename(file.filename)
+        file_content = file.read()  # Read the file content
+        file_size = len(file_content)  # Calculate the file size in bytes
 
+        # Database operations
         cursor = db.cursor()
         cursor.execute(
-            f"INSERT INTO {TABLE_NAME} (file_name, file_link, user_id) VALUES (%s, %s, %s)",
-            (filename, filelink, -1),
+            f"INSERT INTO {TABLE_NAME} (file_name, file_link, user_id, file_size) VALUES (%s, %s, %s, %s)",
+            (filename, filelink, -1, file_size),
         )
         db.commit()
         cursor.close()
 
+        # Upload file to Google Cloud Storage
         blob = storage_client.bucket(BUCKET_NAME).blob(f"{filelink}/{filename}")
-        blob.upload_from_string(file.read(), content_type=file.content_type)
+        blob.upload_from_string(file_content, content_type=file.content_type)
 
     return (
         jsonify(
-            message=f"Files uploaded successfully. Access them at: ", link=filelink
+            message="Files uploaded successfully. Access them at: ", link=filelink
         ),
         201,
     )
+
 
 @app.route("/api/upload", methods=["POST"])
 def api_upload_file():
@@ -61,21 +66,24 @@ def api_upload_file():
 
     for file in files:
         filename = secure_filename(file.filename)
+        file_content = file.read()  # Read the file content
+        file_size = len(file_content)  # Calculate the file size in bytes
 
         # Database operations
         cursor = db.cursor()
         cursor.execute(
-            f"INSERT INTO {TABLE_NAME} (file_name, file_link, user_id) VALUES (%s, %s, %s)",
-            (filename, filelink, -1),
+            f"INSERT INTO {TABLE_NAME} (file_name, file_link, user_id, file_size) VALUES (%s, %s, %s, %s)",
+            (filename, filelink, -1, file_size),
         )
         db.commit()
         cursor.close()
 
         # File upload to Google Cloud Storage
         blob = storage_client.bucket(BUCKET_NAME).blob(f"{filelink}/{filename}")
-        blob.upload_from_string(file.read(), content_type=file.content_type)
+        blob.upload_from_string(file_content, content_type=file.content_type)
 
     return jsonify(message="Files uploaded successfully", link=filelink), 201
+
 
 
 
@@ -84,7 +92,7 @@ def display_file(link):
     cursor = db.cursor(dictionary=True)
 
     cursor.execute(
-        f"SELECT file_name, upload_time, download_count, file_link FROM {TABLE_NAME} WHERE file_link = %s",
+        f"SELECT file_name, upload_time, download_count, file_size, file_link FROM {TABLE_NAME} WHERE file_link = %s",
         (link,),
     )
     files_data = cursor.fetchall()
@@ -93,7 +101,19 @@ def display_file(link):
     if not files_data:
         return "Files not found", 404
 
+    # Optional: Convert file sizes to a more readable format (e.g., KB, MB, etc.)
+    for file in files_data:
+        file['file_size'] = human_readable_size(file['file_size'])
+
     return render_template("file_detail.html", files=files_data, link=link)
+
+def human_readable_size(size, decimal_places=2):
+    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+        if size < 1024.0 or unit == 'TB':
+            break
+        size /= 1024.0
+    return f"{size:.{decimal_places}f} {unit}"
+
 
 
 @app.route("/download/<link>/<filename>")
