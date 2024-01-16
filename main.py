@@ -31,6 +31,17 @@ def hello():
     name = session["name"] if "name" in session else ""
     return render_template("index.html", name=name)
 
+# cursor = db.cursor()
+
+# # Preparing the SQL command
+# alter_command = f"ALTER TABLE {TABLE_NAME} MODIFY user_id VARCHAR(255);"
+
+# # Executing the SQL command
+# cursor.execute(alter_command)
+# db.commit()
+
+# exit()
+
 
 def login_is_required(function):
     def wrapper(*args, **kwargs):
@@ -53,8 +64,8 @@ def login():
 def callback():
     flow.fetch_token(authorization_response=request.url)
 
-    if not session["state"] == request.args["state"]:
-        abort(500)  # State does not match!
+    # if not session["state"] == request.args["state"]:
+    #     abort(500)  # State does not match!
 
     credentials = flow.credentials
     request_session = requests.session()
@@ -97,10 +108,11 @@ def upload_file():
         file_size = len(file_content)  # Calculate the file size in bytes
 
         # Database operations
+        user_id = session["google_id"] if "google_id" in session else -1
         cursor = db.cursor()
         cursor.execute(
             f"INSERT INTO {TABLE_NAME} (file_name, file_link, user_id, file_size) VALUES (%s, %s, %s, %s)",
-            (filename, filelink, -1, file_size),
+            (filename, filelink, user_id, file_size),
         )
         db.commit()
         cursor.close()
@@ -153,7 +165,7 @@ def display_file(link):
     cursor = db.cursor(dictionary=True)
 
     cursor.execute(
-        f"SELECT file_name, upload_time, download_count, file_size, file_link FROM {TABLE_NAME} WHERE file_link = %s",
+        f"SELECT file_name, upload_time, download_count, file_size, user_id, file_link FROM {TABLE_NAME} WHERE file_link = %s",
         (link,),
     )
     files_data = cursor.fetchall()
@@ -161,6 +173,15 @@ def display_file(link):
 
     if not files_data:
         return "Files not found", 404
+    
+    user_id = files_data[0]["user_id"]
+
+    if user_id != -1:
+        if "google_id" not in session:
+            return jsonify(message="Not authorized"), 401
+        google_id = session["google_id"]
+        if google_id != user_id:
+            return jsonify(message="No permission to access files, Log In"), 401
 
     # Optional: Convert file sizes to a more readable format (e.g., KB, MB, etc.)
     for file in files_data:
@@ -243,14 +264,29 @@ def download_all_files(link):
 
 @app.route("/api/download/<link>", methods=["GET"])
 def api_download_all_files(link):
+    user_id_param = request.args.get('user_id')
+
+    if not user_id_param:
+        return jsonify(message="User ID is required"), 400
+
     cursor = db.cursor(dictionary=True)
-    cursor.execute(f"SELECT file_name FROM {TABLE_NAME} WHERE file_link = %s", (link,))
+
+    # Get the user_id associated with the files
+    cursor.execute(
+        f"SELECT file_name, user_id FROM {TABLE_NAME} WHERE file_link = %s", (link,)
+    )
     files_data = cursor.fetchall()
-    db.commit()
-    cursor.close()
 
     if not files_data:
+        cursor.close()
         return jsonify(message="Files not found"), 404
+
+    user_id = files_data[0]["user_id"]
+    cursor.close()
+
+    # Check if user_id is -1 or matches the provided user_id
+    if user_id != -1 and str(user_id) != user_id_param:
+        return jsonify(message="No permission to access files"), 401
 
     zip_filename = f"tmp_{link}.zip"
     with zipfile.ZipFile(zip_filename, "w") as zipf:
@@ -272,6 +308,47 @@ def api_download_all_files(link):
         download_name=f"{link}_files.zip",
         mimetype="application/zip",
     )
+
+
+
+@app.route("/my_files")
+def my_files():
+    # Check if the user is logged in
+    if "google_id" not in session:
+        return redirect(url_for("login"))
+
+    # Get the user's Google ID from the session
+    user_id = session["google_id"]
+
+    # Connect to the database
+    cursor = db.cursor(dictionary=True)
+
+    # Retrieve files associated with the user_id
+    cursor.execute(
+        f"SELECT * FROM {TABLE_NAME} WHERE user_id = %s", (user_id,)
+    )
+    files_data = cursor.fetchall()
+    cursor.close()
+
+    # Check if the user has any files
+    if not files_data:
+        return "No files found for the user", 404
+    
+        # Optional: Convert file sizes to a more readable format (e.g., KB, MB, etc.)
+    for file in files_data:
+        file['file_size'] = human_readable_size(file['file_size'])
+
+    # Render a template to display the files
+    # You need to create a template 'my_files.html' that will display these files
+    return render_template("file_detail.html", files=files_data, name=session["name"])
+
+@app.route("/api_usage")
+def api_usage():
+    user_logged_in = "google_id" in session
+    user_id = session["google_id"] if user_logged_in else None
+
+    return render_template("api_usage.html", user_logged_in=user_logged_in, user_id=user_id)
+
 
 
 
