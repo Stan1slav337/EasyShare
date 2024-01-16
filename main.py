@@ -3,61 +3,83 @@ import mysql.connector
 import uuid
 import io
 import zipfile
+import requests
+from config import *
 from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for, session
-from flask_oauthlib.client import OAuth
 from werkzeug.utils import secure_filename
 from google.cloud import storage
-from config import *
+from google.oauth2 import id_token
+from pip._vendor import cachecontrol
+from google_auth_oauthlib.flow import Flow
+import google.auth.transport.requests
 
 app = Flask(__name__)
 app.static_folder = "templates"
-app.secret_key = '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'
+app.secret_key = GOOGLE_SECRET_KEY
 db = mysql.connector.connect(**DB_CONFIG)
 storage_client = storage.Client()
 
-oauth = OAuth(app)
-google = oauth.remote_app(
-    'google',
-    consumer_key=CONSUMER_KEY,
-    consumer_secret=CONSUMER_SECRET,
-    request_token_params={
-        'scope': 'https://www.googleapis.com/auth/userinfo.email'
-        # Removed 'response_type': 'code' from here
-    },
-    base_url='https://www.googleapis.com/oauth2/v1/',
-    request_token_url=None,
-    access_token_method='POST',
-    access_token_url='https://accounts.google.com/o/oauth2/token',
-    authorize_url='https://accounts.google.com/o/oauth2/auth',
+flow = Flow.from_client_secrets_file(
+    client_secrets_file=CLIENT_SECRETS_FILE,
+    scopes=["https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email", "openid"],
+    redirect_uri="http://localhost:5000/login/callback"
 )
 
-@app.route('/login')
-def login():
-    return google.authorize(callback=url_for('authorized', _external=True))
-
-
 @app.route("/")
+#@login_is_required
 def hello():
-    return render_template("index.html")
+    name = session["name"] if "name" in session else ""
+    return render_template("index.html", name=name)
 
 
-@app.route('/login/callback')
-def authorized():
-    response = google.authorized_response()
-    if response is None or response.get('access_token') is None:
-        return 'Access denied: reason={} error={}'.format(
-            request.args['error_reason'],
-            request.args['error_description']
-        )
+def login_is_required(function):
+    def wrapper(*args, **kwargs):
+        if "google_id" not in session:
+            return jsonify(message="Not authorized"), 401
+        else:
+            return function()
 
-    session['google_token'] = (response['access_token'], '')
-    userinfo = google.get('userinfo')
-    return 'Logged in as id={}'.format(userinfo.data['id'])
+    return wrapper
 
 
-@google.tokengetter
-def get_google_oauth_token():
-    return session.get('google_token')
+@app.route("/login")
+def login():
+    authorization_url, state = flow.authorization_url()
+    session["state"] = state
+    return redirect(authorization_url)
+
+
+@app.route("/login/callback")
+def callback():
+    flow.fetch_token(authorization_response=request.url)
+
+    if not session["state"] == request.args["state"]:
+        abort(500)  # State does not match!
+
+    credentials = flow.credentials
+    request_session = requests.session()
+    cached_session = cachecontrol.CacheControl(request_session)
+    token_request = google.auth.transport.requests.Request(session=cached_session)
+
+    id_info = id_token.verify_oauth2_token(
+        id_token=credentials._id_token,
+        request=token_request,
+        audience=GOOGLE_CLIENT_ID
+    )
+
+    session["google_id"] = id_info.get("sub")
+    session["name"] = id_info.get("name")
+    return redirect("/")
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/")
+    
+
+def protected_area():
+    return f"Hello {session['name']}! <br/> <a href='/logout'><button>Logout</button></a>"
 
 
 @app.route("/upload", methods=["POST"])
@@ -126,8 +148,6 @@ def api_upload_file():
     return jsonify(message="Files uploaded successfully", link=filelink), 201
 
 
-
-
 @app.route("/d/<link>")
 def display_file(link):
     cursor = db.cursor(dictionary=True)
@@ -148,13 +168,13 @@ def display_file(link):
 
     return render_template("file_detail.html", files=files_data, link=link)
 
+
 def human_readable_size(size, decimal_places=2):
     for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
         if size < 1024.0 or unit == 'TB':
             break
         size /= 1024.0
     return f"{size:.{decimal_places}f} {unit}"
-
 
 
 @app.route("/download/<link>/<filename>")
