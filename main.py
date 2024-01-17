@@ -31,17 +31,6 @@ def hello():
     name = session["name"] if "name" in session else ""
     return render_template("index.html", name=name)
 
-# cursor = db.cursor()
-
-# # Preparing the SQL command
-# alter_command = f"ALTER TABLE {TABLE_NAME} MODIFY user_id VARCHAR(255);"
-
-# # Executing the SQL command
-# cursor.execute(alter_command)
-# db.commit()
-
-# exit()
-
 
 def login_is_required(function):
     def wrapper(*args, **kwargs):
@@ -175,8 +164,7 @@ def display_file(link):
         return "Files not found", 404
     
     user_id = files_data[0]["user_id"]
-
-    if user_id != -1:
+    if user_id != "-1":
         if "google_id" not in session:
             return jsonify(message="Not authorized"), 401
         google_id = session["google_id"]
