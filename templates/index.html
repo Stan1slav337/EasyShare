@@ -7,6 +7,19 @@
       <link rel="stylesheet" href="/static/css/index.css">
    </head>
    <body>
+      <div class="navbar">
+         <div class="user-info">
+            {% if name %}
+               <p>Welcome, {{ name }}</p>
+               <a href="/my_files" class="my-files-button">My Files</a>
+               <a href="/logout" class="login-button">Logout</a>
+            {% else %}
+               <a href="/login" class="google-login-button">Login with Google</a>
+            {% endif %}
+            <a href="/api_usage" class="api-button">API Usage</a>
+         </div>
+      </div>
+
       <div class="header">
          <img src="/static/img/logo.png" alt="Logo" width="540" height="120">
          <div class="tagline">Your easy and fast solution for file sharing</div>
@@ -14,12 +27,9 @@
             <input type="file" name="file" id="fileInput" style="display: none;" onchange="handleFileUpload()" multiple />
             <button class="btn" onclick="triggerFileInput()">Upload Files</button>
             <div id="upload-status"></div>
-            <input type="file" id="fileInput" style="display:none;" />
          </div>
       </div>
       <div class="info-section">
-         <div class="login-button">
-            <a href="/login" class="google-login-button">Login with Google</a>
         </div>
          <div class="info-row">
             <div class="info-block">

@@ -3,61 +3,83 @@ import mysql.connector
 import uuid
 import io
 import zipfile
+import requests
+from config import *
 from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for, session
-from flask_oauthlib.client import OAuth
 from werkzeug.utils import secure_filename
 from google.cloud import storage
-from config import *
+from google.oauth2 import id_token
+from pip._vendor import cachecontrol
+from google_auth_oauthlib.flow import Flow
+import google.auth.transport.requests
 
 app = Flask(__name__)
 app.static_folder = "templates"
-app.secret_key = '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'
+app.secret_key = GOOGLE_SECRET_KEY
 db = mysql.connector.connect(**DB_CONFIG)
 storage_client = storage.Client()
 
-oauth = OAuth(app)
-google = oauth.remote_app(
-    'google',
-    consumer_key=CONSUMER_KEY,
-    consumer_secret=CONSUMER_SECRET,
-    request_token_params={
-        'scope': 'https://www.googleapis.com/auth/userinfo.email'
-        # Removed 'response_type': 'code' from here
-    },
-    base_url='https://www.googleapis.com/oauth2/v1/',
-    request_token_url=None,
-    access_token_method='POST',
-    access_token_url='https://accounts.google.com/o/oauth2/token',
-    authorize_url='https://accounts.google.com/o/oauth2/auth',
+flow = Flow.from_client_secrets_file(
+    client_secrets_file=CLIENT_SECRETS_FILE,
+    scopes=["https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email", "openid"],
+    redirect_uri="http://localhost:5000/login/callback"
 )
 
-@app.route('/login')
-def login():
-    return google.authorize(callback=url_for('authorized', _external=True))
-
-
 @app.route("/")
+#@login_is_required
 def hello():
-    return render_template("index.html")
+    name = session["name"] if "name" in session else ""
+    return render_template("index.html", name=name)
 
 
-@app.route('/login/callback')
-def authorized():
-    response = google.authorized_response()
-    if response is None or response.get('access_token') is None:
-        return 'Access denied: reason={} error={}'.format(
-            request.args['error_reason'],
-            request.args['error_description']
-        )
+def login_is_required(function):
+    def wrapper(*args, **kwargs):
+        if "google_id" not in session:
+            return jsonify(message="Not authorized"), 401
+        else:
+            return function()
 
-    session['google_token'] = (response['access_token'], '')
-    userinfo = google.get('userinfo')
-    return 'Logged in as id={}'.format(userinfo.data['id'])
+    return wrapper
 
 
-@google.tokengetter
-def get_google_oauth_token():
-    return session.get('google_token')
+@app.route("/login")
+def login():
+    authorization_url, state = flow.authorization_url()
+    session["state"] = state
+    return redirect(authorization_url)
+
+
+@app.route("/login/callback")
+def callback():
+    flow.fetch_token(authorization_response=request.url)
+
+    # if not session["state"] == request.args["state"]:
+    #     abort(500)  # State does not match!
+
+    credentials = flow.credentials
+    request_session = requests.session()
+    cached_session = cachecontrol.CacheControl(request_session)
+    token_request = google.auth.transport.requests.Request(session=cached_session)
+
+    id_info = id_token.verify_oauth2_token(
+        id_token=credentials._id_token,
+        request=token_request,
+        audience=GOOGLE_CLIENT_ID
+    )
+
+    session["google_id"] = id_info.get("sub")
+    session["name"] = id_info.get("name")
+    return redirect("/")
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/")
+    
+
+def protected_area():
+    return f"Hello {session['name']}! <br/> <a href='/logout'><button>Logout</button></a>"
 
 
 @app.route("/upload", methods=["POST"])
@@ -75,10 +97,11 @@ def upload_file():
         file_size = len(file_content)  # Calculate the file size in bytes
 
         # Database operations
+        user_id = session["google_id"] if "google_id" in session else -1
         cursor = db.cursor()
         cursor.execute(
             f"INSERT INTO {TABLE_NAME} (file_name, file_link, user_id, file_size) VALUES (%s, %s, %s, %s)",
-            (filename, filelink, -1, file_size),
+            (filename, filelink, user_id, file_size),
         )
         db.commit()
         cursor.close()
@@ -126,14 +149,12 @@ def api_upload_file():
     return jsonify(message="Files uploaded successfully", link=filelink), 201
 
 
-
-
 @app.route("/d/<link>")
 def display_file(link):
     cursor = db.cursor(dictionary=True)
 
     cursor.execute(
-        f"SELECT file_name, upload_time, download_count, file_size, file_link FROM {TABLE_NAME} WHERE file_link = %s",
+        f"SELECT file_name, upload_time, download_count, file_size, user_id, file_link FROM {TABLE_NAME} WHERE file_link = %s",
         (link,),
     )
     files_data = cursor.fetchall()
@@ -141,6 +162,14 @@ def display_file(link):
 
     if not files_data:
         return "Files not found", 404
+    
+    user_id = files_data[0]["user_id"]
+    if user_id != "-1":
+        if "google_id" not in session:
+            return jsonify(message="Not authorized"), 401
+        google_id = session["google_id"]
+        if google_id != user_id:
+            return jsonify(message="No permission to access files, Log In"), 401
 
     # Optional: Convert file sizes to a more readable format (e.g., KB, MB, etc.)
     for file in files_data:
@@ -148,13 +177,13 @@ def display_file(link):
 
     return render_template("file_detail.html", files=files_data, link=link)
 
+
 def human_readable_size(size, decimal_places=2):
     for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
         if size < 1024.0 or unit == 'TB':
             break
         size /= 1024.0
     return f"{size:.{decimal_places}f} {unit}"
-
 
 
 @app.route("/download/<link>/<filename>")
@@ -223,14 +252,29 @@ def download_all_files(link):
 
 @app.route("/api/download/<link>", methods=["GET"])
 def api_download_all_files(link):
+    user_id_param = request.args.get('user_id')
+
+    if not user_id_param:
+        return jsonify(message="User ID is required"), 400
+
     cursor = db.cursor(dictionary=True)
-    cursor.execute(f"SELECT file_name FROM {TABLE_NAME} WHERE file_link = %s", (link,))
+
+    # Get the user_id associated with the files
+    cursor.execute(
+        f"SELECT file_name, user_id FROM {TABLE_NAME} WHERE file_link = %s", (link,)
+    )
     files_data = cursor.fetchall()
-    db.commit()
-    cursor.close()
 
     if not files_data:
+        cursor.close()
         return jsonify(message="Files not found"), 404
+
+    user_id = files_data[0]["user_id"]
+    cursor.close()
+
+    # Check if user_id is -1 or matches the provided user_id
+    if user_id != -1 and str(user_id) != user_id_param:
+        return jsonify(message="No permission to access files"), 401
 
     zip_filename = f"tmp_{link}.zip"
     with zipfile.ZipFile(zip_filename, "w") as zipf:
@@ -252,6 +296,47 @@ def api_download_all_files(link):
         download_name=f"{link}_files.zip",
         mimetype="application/zip",
     )
+
+
+
+@app.route("/my_files")
+def my_files():
+    # Check if the user is logged in
+    if "google_id" not in session:
+        return redirect(url_for("login"))
+
+    # Get the user's Google ID from the session
+    user_id = session["google_id"]
+
+    # Connect to the database
+    cursor = db.cursor(dictionary=True)
+
+    # Retrieve files associated with the user_id
+    cursor.execute(
+        f"SELECT * FROM {TABLE_NAME} WHERE user_id = %s", (user_id,)
+    )
+    files_data = cursor.fetchall()
+    cursor.close()
+
+    # Check if the user has any files
+    if not files_data:
+        return "No files found for the user", 404
+    
+        # Optional: Convert file sizes to a more readable format (e.g., KB, MB, etc.)
+    for file in files_data:
+        file['file_size'] = human_readable_size(file['file_size'])
+
+    # Render a template to display the files
+    # You need to create a template 'my_files.html' that will display these files
+    return render_template("file_detail.html", files=files_data, name=session["name"])
+
+@app.route("/api_usage")
+def api_usage():
+    user_logged_in = "google_id" in session
+    user_id = session["google_id"] if user_logged_in else None
+
+    return render_template("api_usage.html", user_logged_in=user_logged_in, user_id=user_id)
+
 
 
 

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>API Usage</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f7f7f7;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .api-section {
+            margin-top: 20px;
+        }
+        .user-info {
+            color: green;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>API Usage Instructions</h1>
+
+        <div class="api-section">
+            <h2>Upload API</h2>
+            <p>Endpoint: <code>/api/upload</code></p>
+            <p>Method: POST</p>
+            <p>Use this endpoint to upload files. The files should be sent as multipart/form-data.</p>
+        </div>
+
+        <div class="api-section">
+            <h2>Download API</h2>
+            <p>Endpoint: <code>/api/download/&lt;link&gt;?user_id=&lt;user_id&gt;</code></p>
+            <p>Method: GET</p>
+            <p>Use this endpoint to download files associated with a specific link. You must provide the user ID as a query parameter. If the user ID does not match the ID associated with the files, or if the ID is not -1 (indicating public files), access will be denied.</p>
+            <p>Example request: <code>curl -o download.zip "http://localhost:5000/api/download/12345?user_id=67890"</code></p>
+        </div>
+
+        {% if user_logged_in %}
+        <div class="user-info">
+            <h2>Your User ID:</h2>
+            <p>{{ user_id }}</p>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

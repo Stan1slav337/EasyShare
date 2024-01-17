@@ -119,3 +119,36 @@
     border-radius: 5px;
     cursor: pointer;
 }
+.navbar {
+    display: flex;
+    justify-content: flex-end;
+    background-color: #f2f2f2;
+    color: #333;
+    padding: 10px 20px;
+ }
+ .navbar a {
+    color: #333;
+    text-decoration: none;
+    padding: 8px 15px;
+    margin-left: 10px;
+    border-radius: 4px;
+    background-color: #e7e7e7;
+    transition: background-color 0.3s, color 0.3s;
+ }
+ .navbar a:hover {
+    background-color: #d3d3d3;
+    color: #000;
+ }
+ .user-info {
+    display: flex;
+    align-items: center;
+ }
+ .user-info p {
+    margin-right: 15px;
+ }
+ .navbar a.logout-button {
+    background-color: #ff4d4d; /* Red color for logout button */
+ }
+ .navbar a.logout-button:hover {
+    background-color: #ff3333;
+ }
